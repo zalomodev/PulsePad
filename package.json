@@ -1,0 +1,65 @@
+{
+  "name": "pulsepad",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Local soundboard with voice mixing, game routing and English/Spanish UI",
+  "author": "Christian / zalomodev",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win dir --publish never",
+    "test": "node scripts/smoke.cjs",
+    "dist": "electron-builder --win nsis zip --x64 --publish never",
+    "test:codecs": "node scripts/codec-test.cjs"
+  },
+  "devDependencies": {
+    "acorn": "^8.19.0",
+    "electron": "^45.5.0",
+    "electron-builder": "^26.0.12",
+    "ffmpeg-static": "^5.3.0",
+    "playwright": "^1.56.1"
+  },
+  "build": {
+    "appId": "local.christian.pulsepad",
+    "productName": "PulsePad",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "src/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [],
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "PulsePad-${version}-Setup.${ext}"
+    },
+    "artifactName": "PulsePad-${version}-win-x64.${ext}",
+    "extraFiles": [
+      {
+        "from": "LICENSE",
+        "to": "LICENSE-PulsePad.txt"
+      },
+      {
+        "from": "THIRD_PARTY_NOTICES.md",
+        "to": "THIRD_PARTY_NOTICES.md"
+      }
+    ]
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zalomodev/PulsePad.git"
+  }
+}
