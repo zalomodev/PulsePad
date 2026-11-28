@@ -57,3 +57,7 @@ Use Windows and Node.js 22+. `npm run build` creates an unpacked app; `npm run d
 The app uses Electron's decoder and ships no FFmpeg binary. `ffmpeg-static` is development-only tooling for legacy test helpers, excluded from releases.
 
 [Contributing](CONTRIBUTING.md) · [Third-party notices](THIRD_PARTY_NOTICES.md) · [MIT license](LICENSE)
+
+## 1.2 beta: Spotify + Clean
+
+[Try the beta](https://github.com/zalomodev/PulsePad/releases/tag/v1.2.0-beta.1) for Spotify desktop metadata suggestions and separate Clean copies of local files. Spotify shortcuts play externally, without OAuth or downloads. Automatic Clean is off by default, uses only zero-cost OpenCode models and never falls back to paid models. The current live test hit a free quota limit; manual word selection and local rendering remain available. Read the [full English guide](docs/SPOTIFY-CLEAN.en.md).

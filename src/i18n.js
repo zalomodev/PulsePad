@@ -1,7 +1,8 @@
 import en from './locales/en.json' with {type:'json'};
+const es=Object.fromEntries(Object.entries(en).map(([key,value])=>[value,key]));
 let language=navigator.language.toLowerCase().startsWith('es')?'es':'en';
 const textNodes=[],attributes=[];
-export function t(source,values={}){let text=language==='en'?(en[source]??source):source;return text.replace(/\{(\w+)\}/g,(match,key)=>values[key]??match);}
+export function t(source,values={}){let text=language==='en'?(en[source]??source):(es[source]??source);return text.replace(/\{(\w+)\}/g,(match,key)=>values[key]??match);}
 export function captureDocument(){
  const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
  while(walker.nextNode()){const node=walker.currentNode;if(node.textContent.trim()&&!['SCRIPT','STYLE'].includes(node.parentElement?.tagName))textNodes.push([node,node.textContent]);}

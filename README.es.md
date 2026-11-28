@@ -57,3 +57,7 @@ Usa Windows y Node.js 22+. `npm run build` genera una carpeta de prueba; `npm ru
 La app usa el decodificador de Electron y no incluye FFmpeg. `ffmpeg-static` es una herramienta de desarrollo para pruebas antiguas y queda fuera de las descargas.
 
 [Contribuir](CONTRIBUTING.md) · [Avisos de terceros](THIRD_PARTY_NOTICES.md) · [Licencia MIT](LICENSE)
+
+## Beta 1.2: Spotify + Clean
+
+[Prueba la beta](https://github.com/zalomodev/PulsePad/releases/tag/v1.2.0-beta.1) con sugerencias de la app de Spotify y copias Clean separadas para archivos locales. Los accesos reproducen externamente, sin OAuth ni descargas. El automático empieza apagado, solo admite modelos de coste cero de OpenCode y nunca cambia a uno de pago. La prueba real encontró cuota gratuita agotada; el marcado manual y la edición local siguen disponibles. Lee la [guía completa en español](docs/SPOTIFY-CLEAN.es.md).

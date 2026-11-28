@@ -27,3 +27,7 @@ migration-test.cjs
 profiles-test.cjs
 ui-test.cjs
 test.cjs
+
+release-next/
+__pycache__/
+*.pyc

@@ -18,6 +18,8 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run test:codecs
+      - run: npm run test:features
+      - run: npm run test:auto-clean
       - run: npm run dist
       - uses: actions/upload-artifact@v4
         with:

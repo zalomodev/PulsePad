@@ -1,9 +1,11 @@
+import {installFeatures} from './feature-ui.js';
 import {importSources} from './importer.js';
 import {t as tr,captureDocument,setLanguage,getLanguage} from './i18n.js';
 import {installGuide} from './guide.js';
 import {icon,labelIcon,decorateIcons} from './icons.js';
 import {SoundEngine} from './engine.js';
 const $=id=>document.getElementById(id);
+let featureUI;
 let state={tracks:[],settings:{}},view='all',editId=null,toastTimer,focused=null,busy=false;
 const svgIcon=icon;
 const colors=['#c2f578','#b6a2ef','#82cce9','#e9b77a','#ec94ae','#87d6b4'];
@@ -14,12 +16,12 @@ function button(text,cls,action,label){const b=document.createElement('button');
 function render(){
   $('count').textContent=state.tracks.length;
   document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
-  $('heading').textContent=view==='all'?tr("Tu música."):view==='favorites'?tr("Tus favoritos."):view;
+  $('heading').textContent=view==='all'?tr("Tu música."):view==='favorites'?tr("Tus favoritos."):view==='clean'?tr('Versiones Clean'):view==='spotify'?'Spotify':view;
   $('profile-select').replaceChildren(...(state.profiles||[]).map(p=>new Option(p.name,p.id)));$('profile-select').value=state.activeProfile||'default';
   const categories=[...new Set(state.tracks.map(t=>t.category))].sort((a,b)=>a.localeCompare(b));
   $('categories').replaceChildren(...categories.map(category=>{const b=button(category,'nav'+(view===category?' active':''),()=>{view=category;render()});b.prepend(icon('folder'));return b}));
   $('category-list').replaceChildren(...categories.map(c=>new Option(c,c)));
-  let tracks=state.tracks.filter(t=>(view==='all'||(view==='favorites'?t.favorite:t.category===view))&&t.name.toLowerCase().includes($('search').value.toLowerCase()));
+  let tracks=state.tracks.filter(t=>(view==='all'||(view==='favorites'?t.favorite:view==='spotify'?t.kind==='spotify':view==='clean'?!!t.cleanOf:t.category===view))&&t.name.toLowerCase().includes($('search').value.toLowerCase()));
   tracks=$('sort').value==='name'?tracks.toSorted((a,b)=>a.name.localeCompare(b.name)):$('sort').value==='category'?tracks.toSorted((a,b)=>a.category.localeCompare(b.category)||a.name.localeCompare(b.name)):tracks.toReversed();
   const list=state.settings.layout!=='grid';$('grid').classList.toggle('list-view',list);$('view-list').setAttribute('aria-pressed',String(list));$('view-grid').setAttribute('aria-pressed',String(!list));
   $('visible-count').textContent=tracks.length===1?tr('1 sonido'):tr('{count} sonidos',{count:tracks.length});
@@ -29,17 +31,17 @@ function render(){
     const play=button('','pad-play',()=>playTrack(t),tr("Reproducir ")+t.name);
     const icon=document.createElement('span');icon.className='pad-icon';icon.appendChild(svgIcon(active?'stop':'play'));
     const title=document.createElement('strong');title.textContent=t.name;title.title=t.name;
-    const detail=document.createElement('small');detail.textContent=t.format+' · '+t.category;play.append(icon,title,detail);const wave=document.createElement('span');wave.className='clip-wave';wave.setAttribute('aria-hidden','true');for(let n=0;n<24;n++){const bar=document.createElement('i');bar.style.height=(5+Math.abs(Math.sin(n*1.7+t.name.length))*19)+'px';wave.append(bar)}play.append(wave);card.append(play);
+    const detail=document.createElement('small');detail.textContent=t.kind==='spotify'?tr('Spotify · reproducción externa'):(t.cleanOf?tr('Clean · revisar')+' · ':'')+t.format+' · '+t.category;play.append(icon,title,detail);const wave=document.createElement('span');wave.className='clip-wave';wave.setAttribute('aria-hidden','true');for(let n=0;n<24;n++){const bar=document.createElement('i');bar.style.height=(5+Math.abs(Math.sin(n*1.7+t.name.length))*19)+'px';wave.append(bar)}play.append(wave);card.append(play);
     if(t.loop){const loop=document.createElement('span');loop.className='loop-mark';loop.appendChild(svgIcon('loop'));card.append(loop)}
     const actions=document.createElement('div');actions.className='card-actions';const key=document.createElement('kbd');key.textContent=t.hotkey?t.hotkey.replace('CommandOrControl','Ctrl').replaceAll('+',' + '):tr("Sin atajo");
-    actions.append(button(t.favorite?'★':'☆','star'+(t.favorite?' selected':''),async()=>{state=await window.pad.update(t.id,{favorite:!t.favorite});render()},tr("Favorito")),key,button('···','',()=>openEdit(t),tr("Editar ")+t.name));card.append(actions);return card;
+    actions.append(button(t.favorite?'★':'☆','star'+(t.favorite?' selected':''),async()=>{state=await window.pad.update(t.id,{favorite:!t.favorite});render()},tr("Favorito")),key,button('···','',()=>featureUI.openActions(t),tr('Opciones de ')+t.name));card.append(actions);return card;
   }));
   $('empty').hidden=tracks.length>0;
   $('empty').querySelector('h2').textContent=state.tracks.length?tr("No hay sonidos en esta vista"):tr("Tu primer sonido empieza aquí");
   $('empty').querySelector('p').textContent=state.tracks.length?tr("Prueba otra búsqueda, colección o añade un favorito."):tr("Arrastra música o efectos a esta ventana. También puedes extraer el audio de tus vídeos.");
   $('engine-status').textContent=engine.active.size?tr('{count} sonido(s) en reproducción',{count:engine.active.size}):tr("Listo para reproducir");
 }
-async function playTrack(t){focused=t.id;await engine.play(t,$('exclusive').checked);}
+async function playTrack(t){if(t.kind==='spotify'){const result=await window.pad.spotifyPlay(t.id);toast(tr(result.mode==='search'?'Se abrió la búsqueda en Spotify. Elige la canción allí.':'Reproduciendo en la app de Spotify, fuera del mezclador.'));return;}focused=t.id;await engine.play(t,$('exclusive').checked);}
 async function importAudio(callback){if(busy)return;busy=true;$('import').disabled=true;$('first-import').disabled=true;try{const result=await importSources(await callback(),p=>{$('import-status').hidden=!p;if(p)$('import-status').textContent=tr('Importando {current}/{total}: {name}',p);});if(result){state=result.state;render();toast(tr('{count} audio(s) importados.',{count:result.added})+(result.errors.length?'\n'+result.errors.join('\n'):''));}}finally{busy=false;$('import').disabled=false;$('first-import').disabled=false;}}
 $('import').onclick=$('first-import').onclick=safe(()=>importAudio(()=>window.pad.pick()));
 window.pad.onProgress(p=>{$('import-status').hidden=!p;if(p)$('import-status').textContent=tr('Importando {current}/{total}: {name}',p);});
@@ -48,7 +50,7 @@ window.addEventListener('dragover',e=>e.preventDefault());window.addEventListene
 window.addEventListener('drop',safe(async e=>{e.preventDefault();dragDepth=0;$('drop').hidden=true;const files=[...e.dataTransfer.files];if(files.length)await importAudio(()=>window.pad.importFiles(files));}));
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{view=b.dataset.view;render()});
 $('search').oninput=render;$('sort').onchange=()=>{state.settings.sort=$('sort').value;render();scheduleSave();};
-function openEdit(t){editId=t.id;$('edit-name').value=t.name;$('edit-category').value=t.category;$('edit-volume').value=t.volume*100;$('edit-loop').checked=t.loop;$('edit-key').value=t.hotkey;$('edit').showModal();}
+function openEdit(t){$('edit-volume').disabled=$('edit-loop').disabled=t.kind==='spotify';editId=t.id;$('edit-name').value=t.name;$('edit-category').value=t.category;$('edit-volume').value=t.volume*100;$('edit-loop').checked=t.loop;$('edit-key').value=t.hotkey;$('edit').showModal();}
 for(const key of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')$('edit-key').add(new Option('Ctrl + Alt + '+key,'CommandOrControl+Alt+'+key));
 $('close-edit').onclick=()=>$('edit').close();
 $('edit-form').onsubmit=safe(async e=>{e.preventDefault();state=await window.pad.update(editId,{name:$('edit-name').value,category:$('edit-category').value,volume:Number($('edit-volume').value)/100,loop:$('edit-loop').checked,hotkey:$('edit-key').value});engine.update(state.tracks.find(t=>t.id===editId));$('edit').close();render();});
@@ -144,3 +146,6 @@ $('profile-select').onchange=safe(async e=>{const id=e.target.value;await quietP
 installGuide({engine,toast,setup:()=>$('game-setup').onclick(),tracks:()=>state.tracks});
 
 $('language').onchange=safe(async()=>{clearTimeout(toastTimer);$('toast').hidden=true;state.language=$('language').value;await window.pad.language(state.language);setLanguage(state.language);decorateIcons();render();gameStatus($('broadcast').checked);updatePlayer();});
+
+featureUI=installFeatures({getState:()=>state,refresh:async()=>{state=await window.pad.state();render();},toast,openEdit});
+decorateIcons();

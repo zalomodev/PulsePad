@@ -7,7 +7,7 @@ export function installGuide({engine,toast,setup,tracks}) {
  function cleanup(){clearTimeout(timer);clearInterval(signalTimer);source?.disconnect();if(recorder?.state==='recording')recorder.stop();stream?.getTracks().forEach(t=>t.stop());stream=null;if(recordedTrack)engine.stop(recordedTrack);recordedTrack=null;}
  async function open(){
   step=0;show();$('help').showModal();
-  $('guide-track').replaceChildren(new Option(tr("Solo mi voz"),''),...tracks().map(t=>new Option(t.name,t.id)));
+  $('guide-track').replaceChildren(new Option(tr("Solo mi voz"),''),...tracks().filter(t=>t.kind!=='spotify').map(t=>new Option(t.name,t.id)));
   const devices=await navigator.mediaDevices.enumerateDevices();
   $('guide-input').replaceChildren(...devices.filter(d=>d.kind==='audioinput'&&!['default','communications'].includes(d.deviceId)).map(d=>new Option(d.label||tr("Micrófono"),d.deviceId)));
   const output=$('cable').selectedOptions[0]?.text||'';
